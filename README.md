@@ -1,0 +1,189 @@
+# 🎧 Social Listening Agent  
+### Monitoring Public Sentiment for **Taboola** & **Realize**
+
+This repository contains two lightweight pipelines that collect public mentions of **Taboola** and **Realize** from Reddit combined with either **Hacker News** or **YouTube**, analyze sentiment using OpenAI models, and generate structured insights including an HTML dashboard.
+
+---
+
+## 📁 Project Structure
+
+```
+.
+├── agent_reddit_hacker/
+│   ├── run_reddit_hacker.py
+│   ├── dashboard_template.html
+│   ├── dashboard.html
+│   ├── all_results.json
+│   └── aggregates.json
+│
+└── agent_reddit_youtube/
+    ├── run_reddit_youtube.py
+    ├── dashboard.html
+    ├── results.json
+    └── test_reddit_hacker.py
+```
+
+> JSON + HTML files are generated automatically when running each pipeline.
+
+---
+
+## ⚙️ Setup
+
+### 1. Create a virtual environment
+
+```bash
+python -m venv .venv
+source .venv/bin/activate      # macOS / Linux
+# .\.venv\Scripts\Activate.ps1  # Windows PowerShell
+```
+
+### 2. Install dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+---
+
+## 🔑 Environment Variables
+
+Export environment variables directly — no `.env` file needed.
+
+### macOS / Linux
+
+```bash
+export OPENAI_API_KEY="your_openai_key"
+export OPENAI_MODEL="gpt-4o-mini"
+export YOUTUBE_API_KEY="your_youtube_key"  # only for YouTube pipeline
+```
+
+### Windows PowerShell
+
+```powershell
+$env:OPENAI_API_KEY="your_openai_key"
+$env:OPENAI_MODEL="gpt-4o-mini"
+$env:YOUTUBE_API_KEY="your_youtube_key"    # only for YouTube pipeline
+```
+
+The scripts read them using `os.getenv()`.
+
+---
+
+## ▶️ Running the Pipelines
+
+### 1️⃣ Reddit + Hacker News
+
+```bash
+cd agent_reddit_hacker
+python run_reddit_hacker.py
+```
+
+This pipeline will:
+
+- Fetch Reddit + Hacker News mentions  
+- Deduplicate records  
+- Run LLM sentiment analysis:
+  - product, performance, business, brand  
+- Extract themes + representative quotes  
+- Build weekly trend  
+- Generate a full HTML dashboard  
+
+**Outputs:**
+
+| File | Description |
+|------|-------------|
+| `all_results.json` | All raw items enriched with LLM analysis |
+| `aggregates.json` | Sentiment per field, themes, weekly trend |
+| `dashboard.html` | Interactive visualization using the template |
+
+---
+
+### 2️⃣ Reddit + YouTube
+
+```bash
+cd agent_reddit_youtube
+python run_reddit_youtube.py
+```
+
+This pipeline will:
+
+- Fetch Reddit posts + comments  
+- Fetch YouTube comments for matching videos  
+- Run batched LLM analysis:
+  - entities, overall sentiment  
+  - structured fields  
+  - topic extraction  
+  - summary text  
+- Compute weekly sentiment trend  
+- Generate a lightweight HTML dashboard  
+
+**Outputs:**
+
+| File | Description |
+|------|-------------|
+| `results.json` | Items + sentiment distribution + trend + top themes |
+| `dashboard.html` | Lightweight browser-based insights page |
+
+Run the optional test:
+
+```bash
+python test_reddit_hacker.py
+```
+
+---
+
+## 📊 What the Agent Detects
+
+### Entities  
+- Taboola  
+- Realize  
+
+### Sentiment  
+- positive  
+- neutral  
+- negative  
+
+### Per-field sentiment  
+(depends on the pipeline)
+
+- product  
+- performance  
+- business  
+- brand  
+- UX  
+- support  
+- ads quality  
+- pricing  
+- integration  
+
+### Additional insights  
+- Themes / topics  
+- Weekly sentiment trends  
+- Representative quotes  
+- Source platform (Reddit / HN / YouTube)
+
+---
+
+## 🧠 LLM Behavior
+
+Both pipelines use:
+
+- **OpenAI response_format=json_schema**  
+- Predictable structured output  
+- Reduced parsing errors  
+- Smooth downstream processing  
+
+---
+
+## 📝 Notes
+
+- Uses only **public APIs**: Reddit Search, HackerNews Algolia, YouTube Data API  
+- Designed for clarity and reproducibility  
+- Dashboards are HTML-based for quick viewing  
+- Entity detection fallback ensures robustness  
+
+---
+
+## 📘 License
+
+MIT License (or your preferred license)

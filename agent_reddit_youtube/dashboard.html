@@ -1,0 +1,936 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Taboola & Realize Sentiment Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #f4f5f7;
+      color: #222;
+    }
+
+    header {
+      background: #001f4f; /* Taboola dark blue */
+      color: white;
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 20px;
+    }
+
+    header small {
+      opacity: 0.9;
+      font-size: 12px;
+    }
+
+    .container {
+      padding: 16px 24px 40px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 20px;
+      padding: 12px;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+
+    .filter-group {
+      display: flex;
+      flex-direction: column;
+      font-size: 12px;
+    }
+
+    .filter-group label {
+      margin-bottom: 4px;
+      font-weight: 600;
+      color: #0048c4; /* Taboola blue */
+    }
+
+    .filter-group select {
+      padding: 6px 8px;
+      border-radius: 4px;
+      border: 1px solid #cbd5e1;
+      min-width: 160px;
+      font-size: 13px;
+      background: #f9fafb;
+    }
+
+    .filter-group select:focus {
+      outline: none;
+      border-color: #1d4ed8;
+      box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.2);
+    }
+
+    button {
+      padding: 8px 12px;
+      border-radius: 4px;
+      border: none;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    #resetBtn {
+      background: #e11d48;
+      color: white;
+    }
+
+    #resetBtn:hover {
+      background: #be123c;
+    }
+
+    .summary-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 8px;
+      padding: 12px 14px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+
+    .card h3 {
+      margin: 0 0 8px;
+      font-size: 14px;
+      color: #111827;
+    }
+
+    .card .value {
+      font-size: 20px;
+      font-weight: 700;
+      color: #0048c4;
+    }
+
+    .card .sub {
+      font-size: 12px;
+      color: #6b7280;
+    }
+
+    .charts-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.4fr) minmax(0, 1.6fr);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .chart-card {
+      background: white;
+      border-radius: 8px;
+      padding: 12px 14px 16px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+
+    .chart-card h3 {
+      margin: 0 0 6px;
+      font-size: 14px;
+      color: #111827;
+    }
+
+    .chart-card small {
+      font-size: 11px;
+      color: #6b7280;
+    }
+
+    .chart-wrapper {
+      margin-top: 8px;
+      position: relative;
+      height: 260px;
+    }
+
+    .table-wrapper {
+      max-height: 220px;
+      overflow: auto;
+      margin-top: 8px;
+      border-radius: 6px;
+      border: 1px solid #e5e7eb;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+
+    thead {
+      background: #f9fafb;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+
+    th, td {
+      padding: 6px 8px;
+      text-align: left;
+      border-bottom: 1px solid #f3f4f6;
+      white-space: nowrap;
+    }
+
+    tbody tr:nth-child(even) {
+      background-color: #fafafa;
+    }
+
+    #itemsContainer {
+      margin-top: 12px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 10px;
+    }
+
+    .item-card {
+      background: white;
+      border-radius: 8px;
+      padding: 10px 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-size: 12px;
+    }
+
+    .item-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 6px;
+      font-size: 11px;
+      color: #6b7280;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 999px;
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .badge.platform {
+      background: #e0edff;
+      color: #1d4ed8;
+    }
+
+    .badge.entity {
+      background: #e0f2fe;
+      color: #075985;
+    }
+
+    .badge.sentiment-positive {
+      background: #ecfdf3;
+      color: #15803d;
+    }
+
+    .badge.sentiment-neutral {
+      background: #f3f4f6;
+      color: #4b5563;
+    }
+
+    .badge.sentiment-negative {
+      background: #fef2f2;
+      color: #b91c1c;
+    }
+
+    .item-text {
+      margin-top: 4px;
+      font-size: 12px;
+      line-height: 1.3;
+      color: #111827;
+    }
+
+    .item-tags {
+      margin-top: 4px;
+      font-size: 11px;
+      color: #6b7280;
+    }
+
+    .item-tags span {
+      font-weight: 600;
+    }
+
+    .item-link {
+      margin-top: 6px;
+      font-size: 11px;
+    }
+
+    .item-link a {
+      color: #2563eb;
+      text-decoration: none;
+    }
+
+    .item-link a:hover {
+      text-decoration: underline;
+    }
+
+    #itemsCountLabel {
+      font-size: 12px;
+      color: #6b7280;
+      margin-top: 4px;
+    }
+
+    /* Theme cards row */
+    .themes-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .theme-card {
+      background: white;
+      border-radius: 8px;
+      padding: 10px 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+      font-size: 12px;
+    }
+
+    .theme-card h4 {
+      margin: 0 0 4px;
+      font-size: 13px;
+      color: #111827;
+    }
+
+    .theme-pill {
+      display: inline-block;
+      border-radius: 999px;
+      padding: 2px 8px;
+      background: #eff6ff;
+      color: #1d4ed8;
+      font-size: 11px;
+      font-weight: 600;
+      margin-right: 4px;
+    }
+
+    .theme-meta {
+      font-size: 11px;
+      color: #6b7280;
+      margin-top: 4px;
+    }
+
+    .theme-quote {
+      margin-top: 6px;
+      font-style: italic;
+      font-size: 11px;
+      color: #111827;
+    }
+
+    .theme-link {
+      margin-top: 4px;
+      font-size: 11px;
+    }
+
+    .theme-link a {
+      color: #2563eb;
+      text-decoration: none;
+    }
+
+    .theme-link a:hover {
+      text-decoration: underline;
+    }
+
+    @media (max-width: 900px) {
+      .charts-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>Taboola & Realize – Social Sentiment Dashboard</h1>
+    <small>Sentiment by field, trends over time & filterable feed</small>
+  </div>
+</header>
+
+<div class="container">
+  <!-- Filters -->
+  <div class="filters">
+    <div class="filter-group">
+      <label for="entityFilter">Entity</label>
+      <select id="entityFilter">
+        <option value="all">All entities</option>
+      </select>
+    </div>
+
+    <div class="filter-group">
+      <label for="platformFilter">Platform</label>
+      <select id="platformFilter">
+        <option value="all">All platforms</option>
+      </select>
+    </div>
+
+    <div class="filter-group">
+      <label for="fieldFilter">Field</label>
+      <select id="fieldFilter">
+        <option value="all">All fields</option>
+      </select>
+    </div>
+
+    <div style="display:flex; align-items:flex-end;">
+      <button id="resetBtn">Reset filters</button>
+    </div>
+  </div>
+
+  <!-- Summary cards -->
+  <div class="summary-cards">
+    <div class="card">
+      <h3>Total items (filtered)</h3>
+      <div class="value" id="totalItemsValue">0</div>
+      <div class="sub">Reddit + YouTube</div>
+    </div>
+    <div class="card">
+      <h3>Taboola items</h3>
+      <div class="value" id="taboolaCountValue">0</div>
+      <div class="sub">After filters</div>
+    </div>
+    <div class="card">
+      <h3>Realize items</h3>
+      <div class="value" id="realizeCountValue">0</div>
+      <div class="sub">After filters</div>
+    </div>
+    <div class="card">
+      <h3>Sentiment mix</h3>
+      <div class="value" id="sentimentMixValue">–</div>
+      <div class="sub">Positive / Neutral / Negative</div>
+    </div>
+  </div>
+
+  <!-- Theme cards (Top 3 themes per entity, if present in results.json) -->
+  <div class="themes-grid" id="themesGrid">
+    <!-- Filled dynamically from top_themes in results.json if exists -->
+  </div>
+
+  <!-- Charts -->
+  <div class="charts-grid">
+    <!-- Sentiment by field -->
+    <div class="chart-card">
+      <h3>Sentiment by field</h3>
+      <small>For current filters. For example: pricing, support, other.</small>
+      <div class="table-wrapper">
+        <table id="fieldTable">
+          <thead>
+          <tr>
+            <th>Field</th>
+            <th>Positive</th>
+            <th>Neutral</th>
+            <th>Negative</th>
+            <th>Total</th>
+          </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="chart-wrapper">
+        <canvas id="fieldSentimentChart"></canvas>
+      </div>
+    </div>
+
+    <!-- Trend over time -->
+    <div class="chart-card">
+      <h3>Trend over time</h3>
+      <small>Weekly count of items by sentiment (overall_sentiment).</small>
+      <div class="chart-wrapper">
+        <canvas id="trendChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Items list -->
+  <div class="card">
+    <h3>Items feed</h3>
+    <div id="itemsCountLabel">Showing 0 items</div>
+    <div id="itemsContainer"></div>
+  </div>
+</div>
+
+<script>
+  let rawData = null;
+  let allItems = [];
+  let fieldChart = null;
+  let trendChart = null;
+
+  const entityFilterEl = document.getElementById('entityFilter');
+  const platformFilterEl = document.getElementById('platformFilter');
+  const fieldFilterEl = document.getElementById('fieldFilter');
+  const resetBtn = document.getElementById('resetBtn');
+
+  const totalItemsValueEl = document.getElementById('totalItemsValue');
+  const taboolaCountValueEl = document.getElementById('taboolaCountValue');
+  const realizeCountValueEl = document.getElementById('realizeCountValue');
+  const sentimentMixValueEl = document.getElementById('sentimentMixValue');
+  const itemsCountLabelEl = document.getElementById('itemsCountLabel');
+  const itemsContainerEl = document.getElementById('itemsContainer');
+  const fieldTableBodyEl = document.querySelector('#fieldTable tbody');
+  const themesGridEl = document.getElementById('themesGrid');
+
+  async function loadData() {
+    try {
+      const resp = await fetch('results.json');
+      if (!resp.ok) {
+        throw new Error('Failed to load results.json: ' + resp.status);
+      }
+      rawData = await resp.json();
+      allItems = rawData.items || [];
+      initFilters();
+      renderThemeCards();
+      applyFilters();
+    } catch (err) {
+      alert('Error loading results.json: ' + err.message);
+      console.error(err);
+    }
+  }
+
+  function initFilters() {
+    // Entities
+    const entitiesSet = new Set();
+    allItems.forEach(item => {
+      (item.entities || []).forEach(e => entitiesSet.add(e));
+    });
+    while (entityFilterEl.options.length > 1) {
+      entityFilterEl.remove(1);
+    }
+    Array.from(entitiesSet).sort().forEach(ent => {
+      const opt = document.createElement('option');
+      opt.value = ent;
+      opt.textContent = ent;
+      entityFilterEl.appendChild(opt);
+    });
+
+    // Platforms
+    const platformsSet = new Set();
+    allItems.forEach(item => platformsSet.add(item.platform));
+    while (platformFilterEl.options.length > 1) {
+      platformFilterEl.remove(1);
+    }
+    Array.from(platformsSet).sort().forEach(p => {
+      const opt = document.createElement('option');
+      opt.value = p;
+      opt.textContent = p;
+      platformFilterEl.appendChild(opt);
+    });
+
+    // Fields
+    const fieldsSet = new Set();
+    allItems.forEach(item => {
+      (item.fields || []).forEach(f => {
+        if (f.field) fieldsSet.add(f.field);
+      });
+    });
+    while (fieldFilterEl.options.length > 1) {
+      fieldFilterEl.remove(1);
+    }
+    Array.from(fieldsSet).sort().forEach(field => {
+      const opt = document.createElement('option');
+      opt.value = field;
+      opt.textContent = field;
+      fieldFilterEl.appendChild(opt);
+    });
+
+    entityFilterEl.addEventListener('change', applyFilters);
+    platformFilterEl.addEventListener('change', applyFilters);
+    fieldFilterEl.addEventListener('change', applyFilters);
+
+    resetBtn.addEventListener('click', () => {
+      entityFilterEl.value = 'all';
+      platformFilterEl.value = 'all';
+      fieldFilterEl.value = 'all';
+      applyFilters();
+    });
+  }
+
+  function applyFilters() {
+    const entity = entityFilterEl.value;
+    const platform = platformFilterEl.value;
+    const field = fieldFilterEl.value;
+
+    const filtered = allItems.filter(item => {
+      if (entity !== 'all' && !(item.entities || []).includes(entity)) {
+        return false;
+      }
+      if (platform !== 'all' && item.platform !== platform) {
+        return false;
+      }
+      if (field !== 'all') {
+        const fields = (item.fields || []).map(f => String(f.field || 'other'));
+        if (!fields.includes(field)) {
+          return false;
+        }
+      }
+      return true;
+    });
+
+    updateSummary(filtered);
+    updateFieldSentiment(filtered, entity);
+    updateTrend(filtered);
+    renderItems(filtered);
+  }
+
+  function updateSummary(filtered) {
+    const total = filtered.length;
+    totalItemsValueEl.textContent = total.toString();
+
+    let taboola = 0;
+    let realize = 0;
+    let pos = 0;
+    let neu = 0;
+    let neg = 0;
+
+    filtered.forEach(item => {
+      const ents = item.entities || [];
+      if (ents.includes('Taboola')) taboola++;
+      if (ents.includes('Realize')) realize++;
+
+      const s = item.overall_sentiment || 'neutral';
+      if (s === 'positive') pos++;
+      else if (s === 'negative') neg++;
+      else neu++;
+    });
+
+    taboolaCountValueEl.textContent = taboola.toString();
+    realizeCountValueEl.textContent = realize.toString();
+
+    if (total === 0) {
+      sentimentMixValueEl.textContent = '–';
+    } else {
+      sentimentMixValueEl.textContent =
+        `${pos} / ${neu} / ${neg}`;
+    }
+  }
+
+  function updateFieldSentiment(filtered, entityFilterValue) {
+    const fieldCounts = {}; // field -> {positive, neutral, negative}
+    filtered.forEach(item => {
+      const ents = item.entities || [];
+      if (entityFilterValue !== 'all' && !ents.includes(entityFilterValue)) {
+        return;
+      }
+      (item.fields || []).forEach(f => {
+        const fieldName = f.field || 'other';
+        const sent = f.sentiment || 'neutral';
+        if (!fieldCounts[fieldName]) {
+          fieldCounts[fieldName] = { positive: 0, neutral: 0, negative: 0 };
+        }
+        if (sent === 'positive' || sent === 'neutral' || sent === 'negative') {
+          fieldCounts[fieldName][sent]++;
+        }
+      });
+    });
+
+    // Update table
+    fieldTableBodyEl.innerHTML = '';
+    const fieldNames = Object.keys(fieldCounts).sort();
+    fieldNames.forEach(name => {
+      const c = fieldCounts[name];
+      const total = c.positive + c.neutral + c.negative;
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${name}</td>
+        <td>${c.positive}</td>
+        <td>${c.neutral}</td>
+        <td>${c.negative}</td>
+        <td>${total}</td>
+      `;
+      fieldTableBodyEl.appendChild(tr);
+    });
+
+    // Update chart
+    const ctx = document.getElementById('fieldSentimentChart').getContext('2d');
+    if (fieldChart) {
+      fieldChart.destroy();
+    }
+
+    if (fieldNames.length === 0) {
+      fieldChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: ['No data'],
+          datasets: [{
+            label: 'No fields',
+            data: [0]
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { display: false }
+          }
+        }
+      });
+      return;
+    }
+
+    const positiveData = fieldNames.map(n => fieldCounts[n].positive);
+    const neutralData = fieldNames.map(n => fieldCounts[n].neutral);
+    const negativeData = fieldNames.map(n => fieldCounts[n].negative);
+
+    fieldChart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: fieldNames,
+        datasets: [
+          {
+            label: 'Positive',
+            data: positiveData
+          },
+          {
+            label: 'Neutral',
+            data: neutralData
+          },
+          {
+            label: 'Negative',
+            data: negativeData
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        interaction: {
+          mode: 'index',
+          intersect: false
+        },
+        plugins: {
+          legend: {
+            position: 'top'
+          }
+        },
+        scales: {
+          x: {
+            stacked: true
+          },
+          y: {
+            stacked: true,
+            beginAtZero: true
+          }
+        }
+      }
+    });
+  }
+
+  function updateTrend(filtered) {
+  // Aggregate by week: "2025-W05"
+  const weekCounts = {}; // weekKey -> {positive, neutral, negative}
+
+  filtered.forEach(item => {
+    const created = item.created_at || "";
+    const day = created.slice(0, 10);
+
+    if (!day) return;
+    const dt = new Date(day);
+    if (isNaN(dt)) return;
+
+    // Convert JS date to ISO week (yyyy-Www)
+    const temp = new Date(dt.getTime());
+    temp.setHours(temp.getHours() + 1);
+
+    // Compute ISO week
+    const d = new Date(Date.UTC(temp.getFullYear(), temp.getMonth(), temp.getDate()));
+    const dayNum = d.getUTCDay() || 7;
+    d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+    const year = d.getUTCFullYear();
+    const yearStart = new Date(Date.UTC(year, 0, 1));
+    const week = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+
+    const weekKey = `${year}-W${String(week).padStart(2,'0')}`;
+
+    if (!weekCounts[weekKey]) {
+      weekCounts[weekKey] = { positive: 0, neutral: 0, negative: 0 };
+    }
+
+    const s = item.overall_sentiment || "neutral";
+    if (weekCounts[weekKey][s] !== undefined) {
+      weekCounts[weekKey][s] += 1;
+    }
+  });
+
+  const labels = Object.keys(weekCounts).sort();
+  const posData = labels.map(w => weekCounts[w].positive);
+  const neuData = labels.map(w => weekCounts[w].neutral);
+  const negData = labels.map(w => weekCounts[w].negative);
+
+  const ctx = document.getElementById('trendChart').getContext('2d');
+
+  if (trendChart) trendChart.destroy();
+
+  if (labels.length === 0) {
+    trendChart = new Chart(ctx, {
+      type: 'line',
+      data: { labels: ['No data'], datasets: [{label: 'No activity', data: [0]}] },
+      options: { plugins: { legend: { display: false }}}
+    });
+    return;
+  }
+
+  trendChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'Positive',
+          data: posData,
+          tension: 0.35,
+          pointRadius: 0,
+          borderWidth: 2
+        },
+        {
+          label: 'Neutral',
+          data: neuData,
+          tension: 0.35,
+          pointRadius: 0,
+          borderWidth: 2
+        },
+        {
+          label: 'Negative',
+          data: negData,
+          tension: 0.35,
+          pointRadius: 0,
+          borderWidth: 2
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      interaction: {
+        mode: 'index',
+        intersect: false
+      },
+      plugins: {
+        legend: { position: 'top' }
+      },
+      scales: {
+        y: { beginAtZero: true }
+      }
+    }
+  });
+}
+
+
+
+  function renderItems(filtered) {
+    itemsContainerEl.innerHTML = '';
+
+    const maxToShow = 200;
+    const slice = filtered.slice(0, maxToShow);
+
+    itemsCountLabelEl.textContent =
+      `Showing ${slice.length} of ${filtered.length} items`;
+
+    if (slice.length === 0) {
+      const empty = document.createElement('div');
+      empty.textContent = 'No items for current filters.';
+      empty.style.fontSize = '12px';
+      empty.style.color = '#6b7280';
+      itemsContainerEl.appendChild(empty);
+      return;
+    }
+
+    slice.forEach(item => {
+      const card = document.createElement('div');
+      card.className = 'item-card';
+
+      const entities = item.entities || [];
+      const topics = item.topics || [];
+      const fields = item.fields || [];
+      const sentiment = item.overall_sentiment || 'neutral';
+
+      const metaDiv = document.createElement('div');
+      metaDiv.className = 'item-meta';
+
+      const leftMeta = document.createElement('div');
+      leftMeta.innerHTML = `
+        <span class="badge platform">${item.platform}</span>
+        ${entities.map(e => `<span class="badge entity">${e}</span>`).join(' ')}
+      `;
+
+      const rightMeta = document.createElement('div');
+      rightMeta.innerHTML = `
+        <span class="badge sentiment-${sentiment}">${sentiment}</span>
+      `;
+
+      metaDiv.appendChild(leftMeta);
+      metaDiv.appendChild(rightMeta);
+
+      const txtDiv = document.createElement('div');
+      txtDiv.className = 'item-text';
+      const text = item.text || '';
+      const short = text.length > 280 ? text.slice(0, 277) + '…' : text;
+      txtDiv.textContent = short || '[no text]';
+
+      const tagsDiv = document.createElement('div');
+      tagsDiv.className = 'item-tags';
+      const fieldNames = fields.map(f => f.field || 'other');
+      tagsDiv.innerHTML = `
+        <span>Topics:</span> ${topics.join(', ') || '–'}
+        <br />
+        <span>Fields:</span> ${fieldNames.join(', ') || '–'}
+      `;
+
+      const linkDiv = document.createElement('div');
+      linkDiv.className = 'item-link';
+      if (item.url) {
+        linkDiv.innerHTML = `<a href="${item.url}" target="_blank" rel="noopener noreferrer">Open source</a>`;
+      }
+
+      card.appendChild(metaDiv);
+      card.appendChild(txtDiv);
+      card.appendChild(tagsDiv);
+      card.appendChild(linkDiv);
+
+      itemsContainerEl.appendChild(card);
+    });
+  }
+
+  function renderThemeCards() {
+    themesGridEl.innerHTML = '';
+
+    if (!rawData || !rawData.top_themes) {
+      return;
+    }
+
+    const topThemes = rawData.top_themes; // { Taboola: [...], Realize: [...] }
+
+    Object.keys(topThemes).forEach(entity => {
+      topThemes[entity].forEach(themeObj => {
+        const card = document.createElement('div');
+
+        if (themeObj.quotes && themeObj.quotes.length > 0) {
+          const quote = document.createElement('div');
+          quote.className = 'theme-quote';
+          quote.textContent = `"${themeObj.quotes[0].text}"`;
+          card.appendChild(quote);
+
+          const link = document.createElement('div');
+          link.className = 'theme-link';
+          const url = themeObj.quotes[0].url || '#';
+          link.innerHTML = `<a href="${url}" target="_blank" rel="noopener noreferrer">Representative post</a>`;
+          card.appendChild(link);
+        }
+
+        themesGridEl.appendChild(card);
+      });
+    });
+  }
+
+  window.addEventListener('load', loadData);
+</script>
+</body>
+</html>

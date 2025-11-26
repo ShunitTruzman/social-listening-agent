@@ -1,0 +1,284 @@
+<html>
+<head>
+  <title>Taboola & Realize - Social Listening Agent</title>
+  <style>
+    body { font-family: 'Segoe UI', Arial, sans-serif; margin:0; padding:14px 24px; background:#f7fafc;}
+    h1,h2 { color:#204080; }
+    #filters { margin: 18px 0 12px 0; display:flex; gap:14px; align-items:center; flex-wrap:wrap;}
+    #filters select { padding:3px 10px; font-size:1.05em;}
+    .summary-table { border-collapse:collapse; background:#fff; margin-top:16px; box-shadow:0 2px 6px #ddd; width:100%; }
+    .summary-table th, .summary-table td { border:1px solid #e0e0e0; padding:6px 10px; font-size:0.95em; }
+    .summary-table th { background:#e9eeff; }
+    .quote-card { margin:8px 0; padding:10px; background: #fffdfa; border-radius:7px; border-left:5px solid #204080; box-shadow:0 1px 3px #eee;}
+    .theme-badge { background:#d6eaff; color:#3060a2; border-radius:8px; padding:2px 7px; margin: 0 4px;}
+    .platform-badge { display:inline-block; background:#6ec1e4; color:#fff; padding: 1px 6px; border-radius:7px; font-size:0.85em;}
+    .volumechart {margin:18px 0 24px;}
+    #data-table td, #data-table th { padding: 5px 6px!important; }
+    button.reset-btn { background:#f6f7fb; color:#222; border:1px solid #b9cbe0; border-radius:4px; padding:5px 14px; margin-left:14px; cursor:pointer; }
+    button.reset-btn:hover { background:#e5e9f4; }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <h1>Taboola & Realize - Social Listening Dashboard</h1>
+
+<div id="filters">
+  <b>Entity:</b>
+  <select id="entity-filter">
+    <option value="ALL">All</option>
+    __ENTITY_OPTIONS__
+  </select>
+
+  <b>Platform:</b>
+  <select id="platform-filter">
+    <option value="ALL">All</option>
+    __PLATFORM_OPTIONS__
+  </select>
+
+  <b>Theme:</b>
+  <select id="theme-filter">
+    <option value="ALL">All</option>
+    __THEME_OPTIONS__
+  </select>
+
+  <b>Sentiment:</b>
+  <select id="sentiment-filter">
+    <option value="ALL">All</option>
+    <option value="positive">Positive</option>
+    <option value="neutral">Neutral</option>
+    <option value="negative">Negative</option>
+  </select>
+
+  <button class="reset-btn" onclick="resetFilters()">Reset Filters</button>
+</div>
+
+
+  <h2>Sentiment Distribution by Field</h2>
+  __SENTIMENT_TABLE__
+
+  <h2>Volume Over Time (by Week)</h2>
+  <canvas id="trendChart" width="800" height="280" class="volumechart"></canvas>
+
+  <h2>Top Themes and Quotes</h2>
+  __THEMES_AND_QUOTES__
+
+  <h2>All Analyzed Mentions (<span id="filteredCount"></span> shown)</h2>
+  <table id="data-table" class="summary-table">
+    <thead>
+      <tr>
+        <th>Entity</th>
+        <th>Platform</th>
+        <th>Title</th>
+        <th>Product</th>
+        <th>Performance</th>
+        <th>Business</th>
+        <th>Brand</th>
+        <th>Overview</th>
+        <th>Themes</th>
+        <th>Date</th>
+        <th>Link</th>
+      </tr>
+    </thead>
+    <tbody id="tablebody">
+    </tbody>
+  </table>
+
+<script>
+
+  const posts = __POSTS_JSON__;
+
+  let trendChart = null;
+
+  function resetFilters() {
+    document.getElementById('entity-filter').value = 'ALL';
+    document.getElementById('platform-filter').value = 'ALL';
+    document.getElementById('theme-filter').value = 'ALL';
+    document.getElementById('sentiment-filter').value = 'ALL';
+    updateTable();
+  }
+
+  function filterData() {
+    const selectedEntity = document.getElementById('entity-filter').value;
+    const selectedPlatform = document.getElementById('platform-filter').value;
+    const selectedTheme = document.getElementById('theme-filter').value;
+    const selectedSentiment = document.getElementById('sentiment-filter').value;
+
+    return posts.filter(r => {
+      const a = r.analysis || {};
+      const overall = a.overall_sentiment || "neutral";
+
+      if (selectedEntity !== 'ALL' && r.entity !== selectedEntity) return false;
+      if (selectedPlatform !== 'ALL' && r.platform !== selectedPlatform) return false;
+
+      if (selectedTheme !== 'ALL') {
+        if (!a.themes || !a.themes.includes(selectedTheme)) return false;
+      }
+
+      if (selectedSentiment !== 'ALL') {
+        if (overall !== selectedSentiment) return false;
+      }
+
+      return true;
+    });
+  }
+
+
+  function getISOWeekLabel(date) {
+  // Make a copy in UTC
+  const d = new Date(Date.UTC(
+    date.getUTCFullYear(),
+    date.getUTCMonth(),
+    date.getUTCDate()
+  ));
+
+  // ISO week: Monday = 1, Sunday = 7
+  const dayNum = d.getUTCDay() || 7;
+
+  // Shift date to Thursday of this week
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+
+  // First day of year
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+
+  // Calculate week number
+  const weekNum = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+  const year = d.getUTCFullYear();
+
+  return `${year}-W${String(weekNum).padStart(2, "0")}`; // e.g. 2025-W06
+}
+
+  function buildTrendData(data) {
+  const counts = {}; // { '2025-W01': {positive: 2, neutral: 1, negative: 0}, ... }
+
+  for (const r of data) {
+    if (!r.created_utc) continue;
+    const a = r.analysis || {};
+    let overall = a.overall_sentiment || "neutral";
+    if (!["positive", "neutral", "negative"].includes(overall)) {
+      overall = "neutral";
+    }
+
+    let weekLabel;
+    try {
+      const dateObj = new Date(Number(r.created_utc) * 1000);
+      weekLabel = getISOWeekLabel(dateObj);
+    } catch (e) {
+      continue;
+    }
+
+    if (!counts[weekLabel]) {
+      counts[weekLabel] = { positive: 0, neutral: 0, negative: 0 };
+    }
+    counts[weekLabel][overall] += 1;
+  }
+
+  const labels = Object.keys(counts).sort();
+  const pos = labels.map(week => counts[week].positive);
+  const neu = labels.map(week => counts[week].neutral);
+  const neg = labels.map(week => counts[week].negative);
+
+  return { labels, pos, neu, neg };
+}
+
+  function updateTrendChart(filteredData) {
+    const chartData = buildTrendData(filteredData);
+    const ctx = document.getElementById('trendChart');
+
+    const datasets = [
+      {
+        label: "Positive",
+        data: chartData.pos,
+        borderColor: "green",
+        tension: 0.2,
+        fill: false
+      },
+      {
+        label: "Neutral",
+        data: chartData.neu,
+        borderColor: "gold",
+        tension: 0.2,
+        fill: false
+      },
+      {
+        label: "Negative",
+        data: chartData.neg,
+        borderColor: "red",
+        tension: 0.2,
+        fill: false
+      }
+    ];
+
+    if (!trendChart) {
+      trendChart = new Chart(ctx, {
+        type: "line",
+        data: {
+          labels: chartData.labels,
+          datasets: datasets
+        },
+        options: {
+          plugins: { legend: { display: true } },
+          scales: {
+            x: { title: { display: true, text: "Day" } },
+            y: { title: { display: true, text: "Posts" }, beginAtZero: true }
+          }
+        }
+      });
+    } else {
+      trendChart.data.labels = chartData.labels;
+      trendChart.data.datasets[0].data = chartData.pos;
+      trendChart.data.datasets[1].data = chartData.neu;
+      trendChart.data.datasets[2].data = chartData.neg;
+      trendChart.update();
+    }
+  }
+
+  function updateTable() {
+    const data = filterData();
+    let rows = "";
+    for (const r of data) {
+      const a = r.analysis || {};
+      const overall = a.overall_sentiment || "";
+      const color =
+        overall === "positive" ? "#299952" :
+        overall === "negative" ? "#b02929" :
+        "#888";
+      const dateStr = (function() {
+        try {
+          return (r.created_utc)
+            ? (new Date(Number(r.created_utc) * 1000)).toISOString().slice(0, 10)
+            : "";
+        } catch (e) { return ""; }
+      })();
+      rows += `<tr>
+        <td>${r.entity}</td>
+        <td>${r.platform}</td>
+        <td>${(r.title || "").slice(0, 90).replace(/</g, '&lt;')}</td>
+        <td>${a.fields ? a.fields.product : ""}</td>
+        <td>${a.fields ? a.fields.performance : ""}</td>
+        <td>${a.fields ? a.fields.business : ""}</td>
+        <td>${a.fields ? a.fields.brand : ""}</td>
+        <td style="color:${color};">${overall}</td>
+        <td>${
+          a.themes && a.themes.length
+            ? a.themes.map(t => '<span class="theme-badge">' + t + '</span>').join(" ")
+            : ""
+        }</td>
+        <td>${dateStr}</td>
+        <td><a href="${r.permalink}" target="_blank">Link</a></td>
+      </tr>`;
+    }
+    document.getElementById('tablebody').innerHTML = rows;
+    document.getElementById('filteredCount').innerText = data.length;
+    updateTrendChart(data);
+  }
+
+  document.getElementById('entity-filter').onchange = updateTable;
+  document.getElementById('platform-filter').onchange = updateTable;
+  document.getElementById('theme-filter').onchange = updateTable;
+  document.getElementById('sentiment-filter').onchange = updateTable;
+  document.addEventListener('DOMContentLoaded', updateTable);
+</script>
+
+
+</body>
+</html>
