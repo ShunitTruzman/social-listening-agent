@@ -153,14 +153,3 @@ Run the optional test:
 ```bash
 python test_reddit_hacker.py
 ```
-
----
-
-
-## 🖼️ Dashboard Previews — Reddit + YouTube
-
-<div align="center">
-  <img src="dashboard_screenshots/reddit_youtube_dashboard/part1.jpg" width="600"><br><br>
-  <img src="dashboard_screenshots/reddit_youtube_dashboard/part2.jpg" width="600"><br><br>
-  <img src="dashboard_screenshots/reddit_youtube_dashboard/part3.jpg" width="600">
-</div>
