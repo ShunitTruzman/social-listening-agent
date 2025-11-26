@@ -39,6 +39,19 @@ This repository contains two lightweight pipelines that collect public mentions 
 
 ---
 
+## 🧩 Cloning & Running the Project
+
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/ShunitTruzman/social-listening-agent.git
+cd social-listening-agent
+```
+
+✔ Important: You **must be inside the project folder** to run the scripts.
+
+---
+
 ## ⚙️ Setup
 
 ### 1. Create a virtual environment
@@ -67,12 +80,12 @@ export OPENAI_MODEL="gpt-4o-mini"
 export YOUTUBE_API_KEY="your_youtube_key"  # only for YouTube pipeline
 ```
 
-### Windows PowerShell
+### Windows (CMD Terminal)
 
-```powershell
-$env:OPENAI_API_KEY="your_openai_key"
-$env:OPENAI_MODEL="gpt-4o-mini"
-$env:YOUTUBE_API_KEY="your_youtube_key"    # only for YouTube pipeline
+```cmd
+set OPENAI_API_KEY=your_openai_key
+set OPENAI_MODEL=gpt-4o-mini
+set YOUTUBE_API_KEY=your_youtube_key    # only for YouTube pipeline
 ```
 
 The scripts read them using `os.getenv()`.
@@ -142,3 +155,12 @@ python test_reddit_hacker.py
 ```
 
 ---
+
+
+## 🖼️ Dashboard Previews — Reddit + YouTube
+
+<div align="center">
+  <img src="dashboard_screenshots/reddit_youtube_dashboard/part1.jpg" width="600"><br><br>
+  <img src="dashboard_screenshots/reddit_youtube_dashboard/part2.jpg" width="600"><br><br>
+  <img src="dashboard_screenshots/reddit_youtube_dashboard/part3.jpg" width="600">
+</div>
