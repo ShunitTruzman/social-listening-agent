@@ -1,7 +1,7 @@
 # 🎧 Social Listening Agent  
 ### Monitoring Public Sentiment for **Taboola** & **Realize**
 
-This repository contains two lightweight pipelines that collect public mentions of **Taboola** and **Realize** from Reddit combined with either **Hacker News** or **YouTube**, analyze sentiment using OpenAI models, and generate structured insights including an HTML dashboard.
+This repository contains two lightweight pipelines that collect public mentions of **Taboola** and **Realize** from Reddit combined with either **Hacker News** or **YouTube**, analyze sentiment using OpenAI model, and generate structured insights including an HTML dashboard.
 
 ---
 
@@ -47,8 +47,6 @@ pip install -r requirements.txt
 
 ## 🔑 Environment Variables
 
-Export environment variables directly — no `.env` file needed.
-
 ### macOS / Linux
 
 ```bash
@@ -80,7 +78,7 @@ python run_reddit_hacker.py
 
 This pipeline will:
 
-- Fetch Reddit + Hacker News mentions  
+- Fetch most recent Reddit + Hacker News mentions  
 - Deduplicate records  
 - Run LLM sentiment analysis:
   - product, performance, business, brand  
@@ -107,15 +105,16 @@ python run_reddit_youtube.py
 
 This pipeline will:
 
-- Fetch Reddit posts + comments  
-- Fetch YouTube comments for matching videos  
+- Fetch most recent Reddit posts + comments  
+- Fetch most recent YouTube comments for matching videos  
 - Run batched LLM analysis:
   - entities, overall sentiment  
   - structured fields  
   - topic extraction  
   - summary text  
 - Compute weekly sentiment trend  
-- Generate a lightweight HTML dashboard  
+- Generate a lightweight HTML dashboard 
+- Test the pipeline
 
 **Outputs:**
 
@@ -132,58 +131,5 @@ python test_reddit_hacker.py
 
 ---
 
-## 📊 What the Agent Detects
 
-### Entities  
-- Taboola  
-- Realize  
 
-### Sentiment  
-- positive  
-- neutral  
-- negative  
-
-### Per-field sentiment  
-(depends on the pipeline)
-
-- product  
-- performance  
-- business  
-- brand  
-- UX  
-- support  
-- ads quality  
-- pricing  
-- integration  
-
-### Additional insights  
-- Themes / topics  
-- Weekly sentiment trends  
-- Representative quotes  
-- Source platform (Reddit / HN / YouTube)
-
----
-
-## 🧠 LLM Behavior
-
-Both pipelines use:
-
-- **OpenAI response_format=json_schema**  
-- Predictable structured output  
-- Reduced parsing errors  
-- Smooth downstream processing  
-
----
-
-## 📝 Notes
-
-- Uses only **public APIs**: Reddit Search, HackerNews Algolia, YouTube Data API  
-- Designed for clarity and reproducibility  
-- Dashboards are HTML-based for quick viewing  
-- Entity detection fallback ensures robustness  
-
----
-
-## 📘 License
-
-MIT License (or your preferred license)
