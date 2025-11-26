@@ -16,11 +16,23 @@ This repository contains two lightweight pipelines that collect public mentions 
 │   ├── all_results.json
 │   └── aggregates.json
 │
-└── agent_reddit_youtube/
-    ├── run_reddit_youtube.py
-    ├── dashboard.html
-    ├── results.json
-    └── test_reddit_hacker.py
+├── agent_reddit_youtube/
+│   ├── run_reddit_youtube.py
+│   ├── dashboard.html
+│   ├── results.json
+│   └── test_reddit_hacker.py
+│
+└── dashboard_screenshots/
+    ├── reddit_hacker_dashboard/
+    │   ├── part1.jpg
+    │   ├── part2.jpg
+    │   └── part3.jpg
+    │
+    └── reddit_youtube_dashboard/
+        ├── part1.jpg
+        ├── part2.jpg
+        └── part3.jpg
+
 ```
 
 > JSON + HTML files are generated automatically when running each pipeline.
@@ -131,5 +143,9 @@ python test_reddit_hacker.py
 
 ---
 
-
+🖼️ Dashboard Previews
+Reddit + HackerNews Dashboard
+<div align="center"> <img src="dashboard_screenshots/reddit_hacker_dashboard/part1.jpg" width="650"><br><br> <img src="dashboard_screenshots/reddit_hacker_dashboard/part2.jpg" width="650"><br><br> <img src="dashboard_screenshots/reddit_hacker_dashboard/part3.jpg" width="650"> </div>
+Reddit + YouTube Dashboard
+<div align="center"> <img src="dashboard_screenshots/reddit_youtube_dashboard/part1.jpg" width="650"><br><br> <img src="dashboard_screenshots/reddit_youtube_dashboard/part2.jpg" width="650"><br><br> <img src="dashboard_screenshots/reddit_youtube_dashboard/part3.jpg" width="650"> </div>
 
